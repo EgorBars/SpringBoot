@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><java class="java.beans.XMLDecoder" version="17.0.10">
+ <object class="java.util.ArrayList">
+  <void method="add">
+   <object class="com.matthew.java.springboottest.shapePlugins.polygon.shape.Polygon">
+    <void property="drawStrategy">
+     <object class="com.matthew.java.springboottest.shapePlugins.polygon.strategy.PolygonDrawStrategy"/>
+    </void>
+    <void property="fill">
+     <string>#292a38</string>
+    </void>
+    <void property="points">
+     <object class="java.util.ArrayList">
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>830.3999633789062</float>
+        </void>
+        <void property="y">
+         <float>101.80000305175781</float>
+        </void>
+       </object>
+      </void>
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>448.3999938964844</float>
+        </void>
+        <void property="y">
+         <float>360.79998779296875</float>
+        </void>
+       </object>
+      </void>
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>948.3999633789062</float>
+        </void>
+        <void property="y">
+         <float>430.79998779296875</float>
+        </void>
+       </object>
+      </void>
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>361.3999938964844</float>
+        </void>
+        <void property="y">
+         <float>95.80000305175781</float>
+        </void>
+       </object>
+      </void>
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>947.3999633789062</float>
+        </void>
+        <void property="y">
+         <float>164.8000030517578</float>
+        </void>
+       </object>
+      </void>
+      <void method="add">
+       <object class="com.matthew.java.springboottest.shapes.Point">
+        <void property="x">
+         <float>642.3999633789062</float>
+        </void>
+        <void property="y">
+         <float>466.79998779296875</float>
+        </void>
+       </object>
+      </void>
+     </object>
+    </void>
+    <void property="stroke">
+     <string>#145bff</string>
+    </void>
+    <void property="strokeWidth">
+     <int>7</int>
+    </void>
+   </object>
+  </void>
+ </object>
+</java>

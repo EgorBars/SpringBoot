@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>My best paint</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <div class="panel">
+        <div class="btn_panel">
+            <th:block th:each="instance : ${shape_names}">
+                <div th:id="${instance.key}" th:text="${instance.value}" class="btn"></div>
+            </th:block>
+            <div id="Select" class="btn">Выделение</div>
+            <div id="reset" class="btn_reset">Очистить полотно</div>
+        </div>
+        <div class="shape_style_panel">
+            <div class="shape_style_editing">
+                <p id="btn_fill" class="fill_on">Заливка</p>
+                <div class="color_picker">
+                    <input id="fill_color" type="color" name="cp_1" value="#FF0000"/>
+                </div>
+            </div>
+            <div class="shape_style_editing">
+                <p id="btn_stroke" class="stroke_on">Обводка</p>
+                <div class="color_picker">
+                    <input id="stroke_color" type="color" name="cp_1"/>
+                </div>
+            </div>
+            <div class="shape_style_editing">
+                <div>
+                    <p>Размер обводки - </p>
+                    <p id="stroke_width_value">5</p>
+                </div>
+                <input id="stroke_width" type="range" min="1" max="10" value="5">
+            </div>
+        </div>
+        <div class="menu-btn" id="menu-btn">
+            &#9776;
+        </div>
+        <div class="menu" id="menu">
+            <div class="menu_serialize_content">
+                <p class="menu_serialize_content_name">Сериализация</p>
+                <div class="serialize_panel">
+                    <div class="serialize_type_panel">
+                        <p>Тип</p>
+                        <div class="serialize_type_btn_panel">
+                            <div class="serialize_type_btn" data-type="xml">XML</div>
+                            <div class="serialize_type_btn" data-type="json">JSON</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="serialize_btn">Сериализовать</div>
+                        <div class="deserialize_btn">Десериализовать</div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu_serialize_mod_content">
+                <p class="menu_serialize_mod_content_name">Режимы сериализации</p>
+                <div id="plugin_transform" th:class="${plugin_transform_mod} ? 'plugin_selected_btn' : 'plugin_btn'">Трансформация</div>
+                <div id="plugin_archive" th:class="${plugin_archive_mod} ? 'plugin_selected_btn' : 'plugin_btn'">Архивация</div>
+            </div>
+            <div class="menu_shape_plugin_content">
+                <p class="menu_shape_plugin_content_name">Загрузка новой фигуры</p>
+                <div class="file_input">
+                    <p>JAR</p>
+                    <input id="jar" name="jar" type="file" accept=".jar">
+                </div>
+                <div class="file_input">
+                    <p>JS</p>
+                    <input id="js" name="js" type="file" accept=".js">
+                </div>
+                <div>
+                    <div class="plugin_download_btn">Загрузить</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div th:utext="${shape_list}"></div>
+</body>
+<script type="module">
+    const svg = document.querySelector('#svg');
+    const tools = {}
+
+    async function loadToolFile(name) {
+        const tool = await import("../js/tools/" + name + "Tool.js");
+        return tool.default;
+    }
+
+    const loadTools = async () => {
+        const btns = [...document.querySelector('.btn_panel').getElementsByClassName('btn')];
+        for (const btn of btns) {
+            const toolName = btn.getAttribute("id");
+            tools[toolName] = await loadToolFile(toolName);
+            tools[toolName].init(svg);
+        }
+    }
+
+    loadTools().then(() => {
+        selectToolBtn(getCookie('curr_tool'));
+        if (currentTool !== "Select")
+            changeToolStyleParams();
+    });
+
+    let currentTool;
+    let fill = "red";
+    let stroke = "black";
+    let strokeWidth = 5;
+
+    const resetRequest = () => {
+        fetch('/reset', {
+            method: 'POST'
+        }).then((response) => {
+            if (!response.ok) {
+                console.error('Error sending request to server:', response.status);
+            }
+            return response;
+        }).then((result) => {
+            console.log('Server response:', result.json());
+            window.location = window.location.href;
+        }).catch((error) => {
+            console.error('An error occurred:', error);
+        })
+    };
+
+    document.querySelector('.btn_reset').addEventListener('click', resetRequest);
+
+    const shapes = document.querySelectorAll('circle, ellipse, rect, line, polyline, polygon');
+    shapes.forEach(shape => {
+        shape.addEventListener('mousedown', (event) => {
+            if (event.shiftKey) {
+                tools[shape.getAttribute("data-type")].startDrag(event, shape);
+            } else if (currentTool === "Select") {
+                tools["Select"].selectShape(shape, tools[shape.getAttribute("data-type")], setInputsState, restoreInputsState);
+            }
+        });
+    });
+
+    async function changeTool(mode) {
+        if (currentTool)
+            svg.removeEventListener('mousedown', tools[currentTool].mousedownEvent);
+        currentTool = mode;
+        tools[mode].select();
+    }
+
+    const toolBtnClick = (btn) => {
+        changeTool(btn.getAttribute('id'));
+        if (currentTool !== "Select")
+            changeToolStyleParams();
+
+        const selected_btn = document.getElementsByClassName('selected_btn')[0];
+        if (selected_btn.getAttribute('id') === 'Polyline' || selected_btn.getAttribute('id') === 'Select')
+            document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'}));
+
+        selected_btn.setAttribute('class', 'btn');
+        selected_btn.setAttribute('onclick', 'shapeBtnClick(this)');
+
+        btn.setAttribute('class', 'selected_btn');
+        btn.setAttribute('onclick', '');
+
+        document.cookie = "curr_tool" + "=" + btn.getAttribute('id');
+    }
+
+    [...document.querySelector('.btn_panel').getElementsByClassName('btn')].forEach((btn) => {
+        btn.addEventListener('click', () => {
+            toolBtnClick(btn);
+        });
+    })
+
+    async function selectToolBtn(id) {
+        if (id === undefined) {
+            await selectToolBtn("Ellipse")
+            return;
+        }
+
+        const new_selected_btn = document.getElementById(id);
+        if (new_selected_btn === null) {
+            await selectToolBtn("Ellipse")
+            return;
+        }
+
+        new_selected_btn.setAttribute('class', 'selected_btn');
+        new_selected_btn.setAttribute('onclick', '');
+        await changeTool(id);
+    }
+
+    function getCookie(name) {
+        let match = document.cookie
+            .split('; ')
+            .find(row => row.startsWith(`${name}=`));
+
+        return match ? match.split('=')[1] : undefined;
+    }
+
+    async function changeToolStyleParams() {
+        tools[currentTool].setParams(fill, stroke, strokeWidth);
+    }
+
+    const colorEditingBtnClick = (btn) => {
+        const type = btn.getAttribute("class");
+
+        switch (type) {
+            case "fill_on":
+                btn.setAttribute("class", "fill_off");
+                fill = "none";
+                document.cookie = "btn_fill=off";
+                break;
+            case "fill_off":
+                btn.setAttribute("class", "fill_on");
+                fill = document.querySelector("#fill_color").value;
+                document.cookie = "btn_fill=on";
+                break;
+            case "stroke_on":
+                btn.setAttribute("class", "stroke_off");
+                stroke = "none";
+                document.cookie = "btn_stroke=off";
+                break;
+            case "stroke_off":
+                btn.setAttribute("class", "stroke_on");
+                stroke = document.querySelector("#stroke_color").value;
+                document.cookie = "btn_stroke=on";
+                break;
+        }
+        changeToolStyleParams();
+    }
+
+    document.querySelectorAll("#btn_fill, #btn_stroke").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            colorEditingBtnClick(btn);
+        })
+    });
+
+    document.querySelectorAll('#fill_color, #stroke_color').forEach((picker) => {
+        picker.addEventListener("input", () => {
+            if (picker.getAttribute("id") === "fill_color") {
+                fill = picker.value;
+                if (currentTool !== "Select")
+                    document.cookie = "fill=" + picker.value;
+            } else {
+                stroke = picker.value;
+                if (currentTool !== "Select")
+                    document.cookie = "stroke=" + picker.value;
+            }
+            changeToolStyleParams();
+        })
+    });
+
+    const rangeInput = document.querySelector('#stroke_width');
+    rangeInput.addEventListener('input', () => {
+        strokeWidth = rangeInput.value;
+        document.querySelector('#stroke_width_value').textContent = strokeWidth;
+        if (currentTool !== "Select")
+            document.cookie = "strokeWidth=" + rangeInput.value;
+        changeToolStyleParams();
+    })
+
+    function setInputsState(fillValue, strokeValue, strokeWidthValue) {
+        document.querySelector('#fill_color').value = fillValue;
+        document.querySelector('#stroke_color').value = strokeValue;
+        document.querySelector('#stroke_width').value = strokeWidthValue;
+        document.querySelector('#stroke_width_value').textContent = strokeWidthValue;
+        fill = fillValue;
+        stroke = strokeValue;
+        strokeWidth = strokeWidthValue;
+    }
+
+    const restoreInputsState = () => {
+        console.log("restore")
+        let cookie = getCookie('fill');
+        if (cookie !== undefined) {
+            fill = cookie;
+            document.querySelector('#fill_color').value = fill;
+        }
+        cookie = getCookie('stroke');
+        if (cookie !== undefined) {
+            stroke = cookie;
+            document.querySelector('#stroke_color').value = stroke;
+        }
+        cookie = getCookie('strokeWidth');
+        if (cookie !== undefined) {
+            strokeWidth = cookie;
+            document.querySelector('#stroke_width').value = strokeWidth;
+            document.querySelector('#stroke_width_value').textContent = strokeWidth;
+        }
+        cookie = getCookie('btn_fill');
+        if (cookie === "off") {
+            fill = "none";
+            document.querySelector('#btn_fill').setAttribute("class", "fill_off");
+        }
+        cookie = getCookie('btn_stroke');
+        if (cookie === "off") {
+            stroke = "none";
+            document.querySelector('#btn_stroke').setAttribute("class", "stroke_off");
+        }
+    }
+
+    restoreInputsState();
+
+    const serializeTypeBtnClick = () => {
+        const selectedBtn = document.querySelector(".serialize_type_selected_btn");
+        const newSelectedBtn = document.querySelector(".serialize_type_btn");
+
+        newSelectedBtn.removeEventListener("click", serializeTypeBtnClick);
+        selectedBtn.addEventListener("click", serializeTypeBtnClick);
+
+        newSelectedBtn.setAttribute("class", "serialize_type_selected_btn")
+        selectedBtn.setAttribute("class", "serialize_type_btn");
+
+        document.cookie = "serialize_type=" + newSelectedBtn.getAttribute("data-type");
+    }
+
+    const serializeType = getCookie("serialize_type");
+    if (serializeType !== undefined)
+        [...document.getElementsByClassName("serialize_type_btn")].forEach((btn) => {
+            if (btn.getAttribute("data-type") === serializeType)
+                btn.setAttribute("class", "serialize_type_selected_btn");
+        })
+    else
+        document.getElementsByClassName("serialize_type_btn")[0].setAttribute("class", "serialize_type_selected_btn");
+
+    document.querySelector(".serialize_type_btn").addEventListener("click", serializeTypeBtnClick);
+
+    document.querySelector(".serialize_btn").addEventListener("click", () => {
+        tools["Select"].sendSvgToServer("/serialize", document.querySelector(".serialize_type_selected_btn").getAttribute("data-type"));
+    })
+
+    document.querySelector(".deserialize_btn").addEventListener("click", () => {
+        tools["Select"].sendSvgToServer("/deserialize", document.querySelector(".serialize_type_selected_btn").getAttribute("data-type"));
+    })
+
+    document.getElementById('menu-btn').addEventListener('click', function() {
+        console.log("ah")
+        const menu = document.getElementById('menu');
+        if (menu.style.right === '0px') {
+            menu.style.right = '-300px';
+        } else {
+            menu.style.right = '0';
+        }
+    })
+
+    document.addEventListener('click', function(event) {
+        const menu = document.getElementById('menu');
+        const menuBtn = document.getElementById('menu-btn');
+        if (!menu.contains(event.target) && !menuBtn.contains(event.target)) {
+            menu.style.right = '-300px';
+        }
+    })
+
+    const fileInputClick = (e) => {
+        const input = e.target;
+        if (!input.value.endsWith("." + input.getAttribute("id"))) {
+            alert('Пожалуйста, выберите файл в формате ' + input.getAttribute("id"));
+            input.value = "";
+        }
+    }
+
+    document.querySelectorAll('input[type="file"]').forEach(input => input.addEventListener("change", fileInputClick));
+
+    document.querySelector(".plugin_download_btn").addEventListener("click", () => {
+        if (document.querySelector("#jar").value === "" || document.querySelector("#js").value === "")
+            alert("Выберите все необходимые файлы!");
+        else {
+            const data = new FormData();
+            data.append("jar", document.querySelector("#jar").files[0]);
+            data.append("js", document.querySelector("#js").files[0])
+            fetch('/plugin', {
+                method: 'POST',
+                body: data
+            }).then((response) => {
+                if (!response.ok) {
+                    console.error('Error sending request to server:', response.status);
+                }
+                return response;
+            }).then((result) => {
+                console.log('Server response:', result.json());
+                window.location = window.location.href;
+            }).catch((error) => {
+                console.error('An error occurred:', error);
+            })
+        }
+    })
+
+
+
+</script>
+</html>

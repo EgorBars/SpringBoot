@@ -1,0 +1,53 @@
+[
+  {
+    "type": "com.matthew.java.springboottest.shapes.Ellipse",
+    "data": {
+      "centre": {
+        "x": 666.8999786376953,
+        "y": 308.7999954223633
+      },
+      "height": 120.99999237060547,
+      "width": 210.49998474121094,
+      "fill": "#292a38",
+      "stroke": "#145bff",
+      "strokeWidth": 7,
+      "drawStrategy": {
+        "type": "com.matthew.java.springboottest.strategies.draw.EllipseDrawStrategy"
+      }
+    }
+  },
+  {
+    "type": "com.matthew.java.springboottest.shapes.Ellipse",
+    "data": {
+      "centre": {
+        "x": 362.8999938964844,
+        "y": 290.7999954223633
+      },
+      "height": 109.99999237060547,
+      "width": 50.5,
+      "fill": "#292a38",
+      "stroke": "#145bff",
+      "strokeWidth": 7,
+      "drawStrategy": {
+        "type": "com.matthew.java.springboottest.strategies.draw.EllipseDrawStrategy"
+      }
+    }
+  },
+  {
+    "type": "com.matthew.java.springboottest.shapes.Circle",
+    "data": {
+      "centre": {
+        "x": 1142.4170869918428,
+        "y": 329.8170656295381
+      },
+      "height": 113.0170625777803,
+      "width": 113.0170625777803,
+      "fill": "#292a38",
+      "stroke": "#145bff",
+      "strokeWidth": 7,
+      "drawStrategy": {
+        "type": "com.matthew.java.springboottest.strategies.draw.CircleDrawStrategy"
+      }
+    }
+  }
+]
