@@ -26,12 +26,16 @@ A full-stack web application for creating and editing vector graphics with real-
 - **CSS3** for modern UI styling
 
 ## 🏗 Architecture
+
 Client Layer (Browser)
 ↓ HTTP/REST
+
 Spring Boot Controllers
 ↓ Service Layer
+
 Business Logic & Shape Processing
 ↓ Data Layer
+
 Shape Factories → Drawing Strategies → Serialization
 ### Core Components
 
